@@ -2,6 +2,7 @@
   "name": "actions-s3-cache",
   "main": "index.js",
   "dependencies": {
+    "7zip-min": "^1.2.1",
     "@actions/core": "^1.2.3",
     "@actions/exec": "^1.0.3",
     "@zeit/ncc": "^0.22.1",

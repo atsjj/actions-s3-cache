@@ -2,18 +2,40 @@ const core = require('@actions/core');
 const exec = require('@actions/exec');
 const AWS = require('aws-sdk');
 const fs = require('graceful-fs');
+const _7z = require('7zip-min');
+
+function pack(...args) {
+  return new Promise(function (resolve, reject) {
+    _7z.pack(...args, function (error) {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+function unpack(...args) {
+  return new Promise(function (resolve, reject) {
+    _7z.unpack(...args, function (error) {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
 
 async function run() {
-
   try {
     const s3Bucket = core.getInput('s3-bucket', { required: true });
     const cacheKey = core.getInput('cache-key', { required: true });
     const paths = core.getInput('paths', { required: true });
     const command = core.getInput('command', { required: true });
-    const zipOption = core.getInput('zip-option', { required: false });
-    const unzipOption = core.getInput('unzip-option', { required: false });
     const workingDirectory = core.getInput('working-directory', { required: false });
-    const fileName = cacheKey + '.zip';
+    const fileName = cacheKey + '.7z';
 
     process.chdir(workingDirectory);
 
@@ -27,7 +49,7 @@ async function run() {
           console.log(`No cache is found for key: ${fileName}`);
 
           await exec.exec(command); // install or build command e.g. npm ci, npm run dev
-          await exec.exec(`zip ${zipOption} ${fileName} ${paths}`);
+          await pack(paths, fileName);
 
           s3.upload({
               Body: fs.readFileSync(fileName),
@@ -46,7 +68,7 @@ async function run() {
           console.log(`Found a cache for key: ${fileName}`);
           fs.writeFileSync(fileName, data.Body);
 
-          await exec.exec(`unzip ${unzipOption} ${fileName}`);
+          await unpack(fileName);
           await exec.exec(`rm -f ${fileName}`);
         }
     });
